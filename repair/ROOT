@@ -1,0 +1,3 @@
+session Repaired_Sheaf = Grothendieck_Schemes_Repaired +
+  options [timeout = 600]
+  theories Repaired_Sheaf

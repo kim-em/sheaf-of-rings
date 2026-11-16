@@ -1,0 +1,155 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/formalization.schema.json
+# SPDX-License-Identifier: Apache-2.0
+version: "v0.4"
+
+project:
+  name: "Sheaf of rings: Lean comparison"
+  description: >-
+    The presheaf of commutative rings of functions with at most continuum many
+    values has unique gluing for covers with at most continuum many members. On
+    the discrete space A = (real -> int), its cover by points has a compatible
+    family without a gluing, so Mathlib's sheaf condition rejects it. An
+    accompanying Isabelle/HOL development proves that the AFP sheaf_of_rings
+    predicate accepts the same mathematical example, and derives further
+    consequences for the AFP predicates, including scheme.
+  authors:
+    - "Kim Morrison"
+    - "OpenAI Codex (AI implementation)"
+    - "Anthropic Claude (AI implementation)"
+  responsible_maintainers:
+    - "Kim Morrison"
+  license: "Apache-2.0"
+
+sources:
+  - title: "The Isabelle/HOL formalization of sheaves has been incorrect for 5 years"
+    id: "https://github.com/kim-em/sheaf-of-rings/blob/main/article/note.tex"
+    type: "original-proof"
+    location: "Theorem 1 and Section 3: the bounded-range counterexample and what Mathlib says"
+    relationship: "formalizes"
+    license: "Apache-2.0"
+    note: >-
+      The note and formal proofs were developed together.
+  - title: "Algebraic Geometry"
+    authors:
+      - "Robin Hartshorne"
+    id: "isbn:9780387902449"
+    type: "book"
+    location: "Section II.1: the definition of a sheaf, and Proposition 1.1"
+    relationship: "background"
+    note: >-
+      The ordinary sheaf condition tests every open cover. Proposition II.1.1
+      states that a morphism of sheaves inducing isomorphisms on all stalks is
+      an isomorphism.
+
+related_formalizations:
+  - id: "https://github.com/leanprover-community/mathlib4/tree/56a005855ea17e0b0958f73ec801ae140b0a1679/Mathlib/Topology/Sheaves"
+    relationship: "builds-on"
+    note: >-
+      Uses Mathlib's actual IsSheaf predicate and unique-gluing API for presheaves
+      valued in a concrete category. The theorem isIso_of_stalkwise_iso is a
+      restatement of Mathlib's isIso_of_stalkFunctor_map_iso, not a new proof.
+  - id: "https://github.com/isabelle-prover/mirror-afp-2026/tree/aaa511aa20958abfed536c271dfd2fe115515d6c/thys/Grothendieck_Schemes"
+    relationship: "other"
+    note: >-
+      The specification being audited, whose covers are indexed by subsets of real.
+  - id: "https://github.com/kim-em/sheaf-of-rings/tree/main/counterexample"
+    relationship: "other"
+    note: >-
+      Companion Isabelle/HOL proofs, against the unmodified AFP entry, that the
+      AFP predicate sheaf_of_rings accepts the example, that the stalkwise
+      isomorphism theorem fails for it, and that the AFP predicate scheme accepts
+      objects without gluing and with noncommutative global sections.
+
+classification:
+  arxiv: ["math.AG", "cs.LO"]
+
+status:
+  scope: >-
+    Describes the Lean development in lean/Counterexample.lean only. It defines
+    the bounded-range presheaf of commutative rings, proves small-index gluing
+    and failure of Mathlib sheafness for the concrete large ring, and records
+    Mathlib's stalkwise isomorphism theorem. The results about the AFP
+    predicates are proved in Isabelle/HOL and are not part of this metadata.
+  sorry_count: 0
+  sorry_in_definitions: 0
+  axioms: ["propext", "Classical.choice", "Quot.sound"]
+  main_results:
+    - declaration: "SchemesAudit.boundedRing_gluing_of_small_index"
+      file: "lean/Counterexample.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+    - declaration: "SchemesAudit.largeRing_not_isSheaf_commRing"
+      file: "lean/Counterexample.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+    - declaration: "SchemesAudit.largeRing_not_isSheafUniqueGluing_commRing"
+      file: "lean/Counterexample.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+    - declaration: "SchemesAudit.isIso_of_stalkwise_iso"
+      file: "lean/Counterexample.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+
+automation:
+  methods:
+    - method: "agent"
+      framework: "OpenAI Codex"
+      tool_setup: >-
+        Lean and Lake with the pinned Mathlib dependency; local builds and
+        #print axioms checks. Isabelle/HOL was used for the companion development.
+      prompting_notes: >-
+        Investigate whether the AFP sheaf definition agrees with the mathematical
+        and Mathlib definitions, and construct a checked counterexample.
+    - method: "agent"
+      framework: "Anthropic Claude Code"
+      tool_setup: >-
+        Lean and Lake with the pinned Mathlib dependency; local builds and
+        #print axioms checks. Isabelle2026 and the AFP release for the companion
+        development.
+      prompting_notes: >-
+        Review the existing development for errors, restate the Lean result for
+        a presheaf of commutative rings, and look for stronger consequences of
+        the AFP definition.
+  notes: >-
+    Codex wrote the first version of the proofs and Claude reviewed and extended
+    them, both under Kim Morrison's direction. The exact model variants and
+    compute cost were not recorded.
+
+fidelity:
+  divergences: >-
+    Lean models the bounded-range presheaf as a CommRingCat-valued presheaf on a
+    TopCat in universe 0. The companion Isabelle development checks acceptance
+    by the actual AFP locale predicates; there is no machine-checked translation
+    between the two proof assistants. Small-index gluing is proved for every
+    index type of cardinality at most the continuum. The failing cover by points
+    is indexed by A itself, within Type 0.
+
+review:
+  status: "self-assessed"
+  notes: >-
+    The implementing agents checked the proof file with Lean and inspected the
+    printed axiom dependencies of all main results. No independent semantic
+    review, Comparator check, or separate kernel implementation check is claimed.
+
+alignment:
+  namespace: "SchemesAudit"
+  statements:
+    - source: "Note, Section 3: unique gluing on small-index covers"
+      lean: "SchemesAudit.boundedRing_gluing_of_small_index"
+      module: "Counterexample"
+      status: "proved"
+    - source: "Note, Section 3: Mathlib's sheaf condition rejects the presheaf of Theorem 1"
+      lean: "SchemesAudit.largeRing_not_isSheaf_commRing"
+      module: "Counterexample"
+      status: "proved"
+    - source: "Note, Section 3: Proposition II.1.1 in Mathlib"
+      lean: "SchemesAudit.isIso_of_stalkwise_iso"
+      module: "Counterexample"
+      status: "proved"
+      note: "Directly reuses Mathlib's existing theorem."
+
+acknowledgements: >-
+  Uses Lean and Mathlib and compares with the AFP development by Anthony Bordg,
+  Lawrence C. Paulson, and Wenda Li. Upstream authorship and licensing are
+  documented in THIRD_PARTY.md and licenses/README.md.

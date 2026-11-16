@@ -1,0 +1,20 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=25mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,amsmath,amssymb,amsthm,microtype}
+\usepackage[hidelinks]{hyperref}
+\usepackage{listings}
+\usepackage{url}
+\makeatletter\g@addto@macro\UrlBreaks{\do\_}\makeatother
+\lstset{basicstyle=\small\ttfamily,columns=fullflexible,keepspaces=true,
+  breaklines=true,frame=single,aboveskip=8pt,belowskip=8pt,
+  literate={¬}{{$\neg$}}1 {ℝ}{{$\mathbb{R}$}}1
+           {→}{{$\to$}}1 {ℤ}{{$\mathbb{Z}$}}1}
+\newtheorem{theorem}{Theorem}
+\title{\parbox[t]{0.67\textwidth}{\centering %TITLE%}}
+\author{%AUTHOR%}
+\date{%DATE%}
+\begin{document}
+\emergencystretch=3em
+\maketitle
+\vspace{-2em}

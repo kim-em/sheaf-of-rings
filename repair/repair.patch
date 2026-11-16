@@ -1,0 +1,151 @@
+--- a/Topological_Space.thy
++++ b/Topological_Space.thy
+@@ -75,7 +75,7 @@
+ subsection \<open>Covers\<close>
+ 
+ locale cover_of_subset =
+-  fixes X:: "'a set" and U:: "'a set" and index:: "real set" and cover:: "real \<Rightarrow> 'a set"
++  fixes X:: "'a set" and U:: "'a set" and index:: "'a set set" and cover:: "'a set \<Rightarrow> 'a set"
+ (* We use real instead of index::"'b set" otherwise we get some troubles with locale sheaf_of_rings
+ in Comm_Ring_Theory.thy *)
+   assumes is_subset: "U \<subseteq> X" and are_subsets: "\<And>i. i \<in> index \<Longrightarrow> cover i \<subseteq> X"
+@@ -87,7 +87,7 @@
+   shows "\<exists>i\<in>index. x \<in> cover i"
+   using assms covering by auto
+ 
+-definition select_index:: "'a \<Rightarrow> real"
++definition select_index:: "'a \<Rightarrow> 'a set"
+   where "select_index x \<equiv> SOME i. i \<in> index \<and> x \<in> cover i"
+ 
+ lemma cover_of_select_index:
+@@ -208,16 +208,18 @@
+ 
+ lemma open_cover_of_open_subset_from_target_to_source:
+   assumes "open_cover_of_open_subset S' is_open' U I C"
+-  shows "open_cover_of_open_subset S is_open (f\<^sup>\<inverse> S U) I (\<lambda>i. f\<^sup>\<inverse> S (C i))"
++  shows "open_cover_of_open_subset S is_open (f\<^sup>\<inverse> S U) ((\<lambda>i. f\<^sup>\<inverse> S (C i)) ` I) (\<lambda>W. W)"
+ proof
+   show "f \<^sup>\<inverse> S U \<subseteq> S" by simp
+-  show "f \<^sup>\<inverse> S (C i) \<subseteq> S" if "i \<in> I" for i
+-    using that by simp
++  show "W \<subseteq> S" if "W \<in> (\<lambda>i. f\<^sup>\<inverse> S (C i)) ` I" for W
++    using that by auto
+   show "is_open (f \<^sup>\<inverse> S U)"
+     by (meson assms is_continuous open_cover_of_open_subset.is_open_subset)
+-  show "\<And>i. i \<in> I \<Longrightarrow> is_open (f \<^sup>\<inverse> S (C i))"
+-    by (meson assms is_continuous open_cover_of_open_subset_def open_cover_of_subset.are_open_subspaces)
+-  show "f \<^sup>\<inverse> S U \<subseteq> (\<Union>i\<in>I. f \<^sup>\<inverse> S (C i))"
++  show "is_open W" if "W \<in> (\<lambda>i. f\<^sup>\<inverse> S (C i)) ` I" for W
++    using that assms is_continuous
++    by (auto simp: open_cover_of_open_subset_def open_cover_of_subset_def
++        open_cover_of_subset_axioms_def)
++  show "f \<^sup>\<inverse> S U \<subseteq> (\<Union>W\<in>(\<lambda>i. f\<^sup>\<inverse> S (C i)) ` I. W)"
+     using assms unfolding open_cover_of_open_subset_def cover_of_subset_def open_cover_of_subset_def
+     by blast
+ qed
+--- a/Comm_Ring.thy
++++ b/Comm_Ring.thy
+@@ -848,29 +848,80 @@
+     and VU: "\<And>i. i \<in> I \<Longrightarrow> V i \<subseteq> U"
+     and s: "s \<in> im_sheaf U"
+     and eq0: "\<And>i. i \<in> I \<Longrightarrow> im_sheaf_morphisms U (V i) s =zero_im_sheaf (V i)"
+-  have "open_cover_of_open_subset S is_open (f\<^sup>\<inverse> S U) I (\<lambda>i. f\<^sup>\<inverse> S (V i))"
++  let ?J = "(\<lambda>i. f\<^sup>\<inverse> S (V i)) ` I"
++  have "open_cover_of_open_subset S is_open (f\<^sup>\<inverse> S U) ?J (\<lambda>W. W)"
+     by (simp add: oc open_cover_of_open_subset_from_target_to_source)
+-  then show "s = zero_im_sheaf U" using zero_im_sheaf_def
+-    by (smt (z3) VU im_sheaf_def im_sheaf_morphisms_def eq0 inf.absorb_iff2 inf_le2 inf_sup_aci(1) inf_sup_aci(3) locality s vimage_Int)
++  moreover have "\<And>W. W \<in> ?J \<Longrightarrow> W \<subseteq> f\<^sup>\<inverse> S U"
++    using VU by auto
++  moreover have "s \<in> \<FF> (f\<^sup>\<inverse> S U)"
++    using s by (simp add: im_sheaf_def)
++  moreover have "\<And>W. W \<in> ?J \<Longrightarrow> \<rho> (f\<^sup>\<inverse> S U) W s = \<zero>\<^bsub>W\<^esub>"
++    using eq0 by (auto simp: im_sheaf_morphisms_def zero_im_sheaf_def)
++  ultimately have "s = \<zero>\<^bsub>f\<^sup>\<inverse> S U\<^esub>"
++    using locality[of "f\<^sup>\<inverse> S U" ?J "\<lambda>W. W" s] by blast
++  then show "s = zero_im_sheaf U"
++    by (simp add: zero_im_sheaf_def)
+ next
+   fix U I V s
+   assume oc: "open_cover_of_open_subset S' is_open' U I V"
+     and VU: "\<forall>i. i \<in> I \<longrightarrow> V i \<subseteq> U \<and> s i \<in> im_sheaf (V i)"
+     and eq: "\<And>i j. \<lbrakk>i \<in> I; j \<in> I\<rbrakk> \<Longrightarrow> im_sheaf_morphisms (V i) (V i \<inter> V j) (s i) = im_sheaf_morphisms (V j) (V i \<inter> V j) (s j)"
+-  have "\<exists>t. t \<in> \<FF> (f  \<^sup>\<inverse> S U) \<and> (\<forall>i. i \<in> I \<longrightarrow> \<rho> (f  \<^sup>\<inverse> S U) (f  \<^sup>\<inverse> S (V i)) t = s i)"
++  let ?J = "(\<lambda>i. f\<^sup>\<inverse> S (V i)) ` I"
++  text \<open>Distinct indices may have the same preimage, so the family is reindexed by the
++    preimages themselves; compatibility makes the choice of representative irrelevant.\<close>
++  define pick where "pick W = (SOME i. i \<in> I \<and> f\<^sup>\<inverse> S (V i) = W)" for W
++  define s' where "s' W = s (pick W)" for W
++  have pick: "pick W \<in> I \<and> f\<^sup>\<inverse> S (V (pick W)) = W" if "W \<in> ?J" for W
++  proof -
++    have "\<exists>i. i \<in> I \<and> f\<^sup>\<inverse> S (V i) = W" using that by auto
++    then show ?thesis unfolding pick_def by (rule someI_ex)
++  qed
++  have key: "s' (f\<^sup>\<inverse> S (V i)) = s i" if "i \<in> I" for i
++  proof -
++    let ?W = "f\<^sup>\<inverse> S (V i)"
++    let ?j = "pick ?W"
++    have j: "?j \<in> I" "f\<^sup>\<inverse> S (V ?j) = ?W"
++      using pick[of ?W] that by auto
++    have "is_open' (V i)"
++      using oc that
++      by (auto simp: open_cover_of_open_subset_def open_cover_of_subset_def
++          open_cover_of_subset_axioms_def)
++    then have op: "is_open ?W"
++      by (rule is_continuous)
++    have si: "s i \<in> \<FF> ?W" and sj: "s ?j \<in> \<FF> ?W"
++      using VU that j by (auto simp: im_sheaf_def)
++    have "f\<^sup>\<inverse> S (V i \<inter> V ?j) = ?W"
++      using j(2) by blast
++    with eq[OF that j(1)] j(2) have "\<rho> ?W ?W (s i) = \<rho> ?W ?W (s ?j)"
++      by (simp add: im_sheaf_morphisms_def)
++    then show ?thesis
++      using si sj op by (simp add: s'_def)
++  qed
++  have "\<exists>t. t \<in> \<FF> (f  \<^sup>\<inverse> S U) \<and> (\<forall>W. W \<in> ?J \<longrightarrow> \<rho> (f  \<^sup>\<inverse> S U) W t = s' W)"
+   proof (rule glueing)
+-    show "open_cover_of_open_subset S is_open (f \<^sup>\<inverse> S U) I (\<lambda>i. f \<^sup>\<inverse> S (V i))"
+-      using oc open_cover_of_open_subset_from_target_to_source by presburger
+-    show "\<forall>i. i \<in> I \<longrightarrow> f \<^sup>\<inverse> S (V i) \<subseteq> f \<^sup>\<inverse> S U \<and> s i \<in> \<FF> (f \<^sup>\<inverse> S (V i))"
+-      using VU im_sheaf_def by blast
+-    show "\<rho> (f \<^sup>\<inverse> S (V i)) (f \<^sup>\<inverse> S (V i) \<inter> f \<^sup>\<inverse> S (V j)) (s i) = \<rho> (f \<^sup>\<inverse> S (V j)) (f \<^sup>\<inverse> S (V i) \<inter> f \<^sup>\<inverse> S (V j)) (s j)"
+-      if "i \<in> I" "j \<in> I" for i j
+-      using im_sheaf_morphisms_def eq that
+-      by (smt (z3) Int_commute Int_left_commute inf.left_idem vimage_Int)
++    show "open_cover_of_open_subset S is_open (f \<^sup>\<inverse> S U) ?J (\<lambda>W. W)"
++      by (simp add: oc open_cover_of_open_subset_from_target_to_source)
++    show "\<forall>W. W \<in> ?J \<longrightarrow> W \<subseteq> f \<^sup>\<inverse> S U \<and> s' W \<in> \<FF> W"
++      using VU key by (auto simp: im_sheaf_def)
++    show "\<rho> W (W \<inter> W') (s' W) = \<rho> W' (W \<inter> W') (s' W')"
++      if WJ: "W \<in> ?J" and WJ': "W' \<in> ?J" for W W'
++    proof -
++      obtain i where i: "i \<in> I" "W = f\<^sup>\<inverse> S (V i)"
++        using WJ by (rule imageE)
++      obtain j where j: "j \<in> I" "W' = f\<^sup>\<inverse> S (V j)"
++        using WJ' by (rule imageE)
++      have "f\<^sup>\<inverse> S (V i \<inter> V j) = W \<inter> W'"
++        using i(2) j(2) by blast
++      with eq[OF i(1) j(1)] show ?thesis
++        by (simp add: im_sheaf_morphisms_def i(2) j(2) key[OF i(1)] key[OF j(1)])
++    qed
+   qed
+-  then obtain t where "t \<in> \<FF> (f\<^sup>\<inverse> S U) \<and> (\<forall>i. i\<in>I \<longrightarrow> \<rho> (f\<^sup>\<inverse> S U) (f\<^sup>\<inverse> S (V i)) t = s i)" ..
++  then obtain t where t: "t \<in> \<FF> (f\<^sup>\<inverse> S U)"
++    and t': "\<And>W. W \<in> ?J \<Longrightarrow> \<rho> (f\<^sup>\<inverse> S U) W t = s' W" by blast
++  have "im_sheaf_morphisms U (V i) t = s i" if "i \<in> I" for i
++    using t'[of "f\<^sup>\<inverse> S (V i)"] key[OF that] that by (simp add: im_sheaf_morphisms_def)
+   then show "\<exists>t. t \<in> im_sheaf U \<and> (\<forall>i. i \<in> I \<longrightarrow> im_sheaf_morphisms U (V i) t = s i)"
+-    using im_sheaf_def im_sheaf_morphisms_def by auto
++    using t im_sheaf_def by auto
+ qed
+ 
+ sublocale sheaf_of_rings S' is_open' im_sheaf im_sheaf_morphisms b
+@@ -4674,7 +4725,7 @@
+       and "\<forall>i. i \<in> I \<longrightarrow> V i \<subseteq> U \<and> s i \<in> \<O> V i"
+       and "\<And>i j. \<lbrakk>i \<in> I; j \<in> I\<rbrakk> \<Longrightarrow> sheaf_spec_morphisms (V i) (V i \<inter> V j) (s i) = sheaf_spec_morphisms (V j) (V i \<inter> V j) (s j)"
+   then show "\<exists>t. t \<in> \<O> U \<and> (\<forall>i. i \<in> I \<longrightarrow> sheaf_spec_morphisms U (V i) t = s i)"
+-    by (smt (verit, ccfv_threshold) sheaf_of_rings.glueing sheaf_spec_is_sheaf)
++    using sheaf_of_rings.glueing[OF sheaf_spec_is_sheaf, of U I V s] by blast
+ qed (use is_prime in auto)
+ 
+ declare st.subset_of_opens [simp del, rule del] \<comment>\<open>because it loops!\<close>

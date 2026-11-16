@@ -1,0 +1,9 @@
+session Schemes_Counterexample = Grothendieck_Schemes +
+  options [timeout = 1200]
+  sessions "HOL-Library"
+  theories
+    Counterexample
+    Stalk_Counterexample
+    Scheme_Counterexample
+    NC_Scheme
+    Audit

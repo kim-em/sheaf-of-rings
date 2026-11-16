@@ -1,0 +1,13 @@
+name: Article theorem links
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check theorem names at linked source lines
+        run: python3 article/check_links.py

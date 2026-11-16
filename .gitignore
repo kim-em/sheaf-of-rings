@@ -1,0 +1,8 @@
+lean/.lake/
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.olean
+*.ilean
+*.trace

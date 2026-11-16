@@ -1,0 +1,24 @@
+name = "sheaf-article"
+version = "0.1.0"
+defaultTargets = ["article"]
+
+[[require]]
+name = "verso"
+git = "https://github.com/leanprover/verso"
+rev = "a40afc8c44badcc1e58f060ec70a2aa5cb6243c6"
+
+[[lean_lib]]
+name = "Article"
+
+[[lean_lib]]
+name = "Note"
+
+[[lean_exe]]
+name = "article"
+root = "Main"
+
+[[lean_lib]]
+name = "Render"
+
+[[lean_lib]]
+name = "BlogTheme"

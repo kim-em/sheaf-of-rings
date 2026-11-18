@@ -12,7 +12,7 @@
   literate={¬}{{$\neg$}}1 {ℝ}{{$\mathbb{R}$}}1
            {→}{{$\to$}}1 {ℤ}{{$\mathbb{Z}$}}1}
 \newtheorem{theorem}{Theorem}
-\title{\parbox[t]{0.67\textwidth}{\centering The Isabelle/HOL formalization of sheaves has been incorrect for 5 years}}
+\title{\parbox[t]{0.67\textwidth}{\centering An error in the Isabelle/HOL formalization of sheaves}}
 \author{Kim Morrison}
 \date{16 November 2026}
 \begin{document}
@@ -20,20 +20,10 @@
 \maketitle
 \vspace{-2em}
 \begin{abstract}
-The AFP entry \emph{Grothendieck's Schemes in Algebraic Geometry} states the sheaf axioms only for covers indexed by sets of real numbers. We record four consequences, each checked in Isabelle against the unmodified entry. Its predicate \texttt{sheaf\_of\_rings} accepts a presheaf that fails gluing. Hartshorne's Proposition II.1.1, that a morphism of sheaves inducing isomorphisms on all stalks is an isomorphism, is false for these sheaves. Its predicate \texttt{scheme} accepts an object whose structure presheaf fails gluing, and another whose ring of global sections is not commutative. None of this can happen with Mathlib's definitions. The repair is small. Our point is a different one: the definition has stood since April 2021, and the entry lacks basic consequences of the sheaf axioms that would expose this restriction. This note was written by AIs (Claude and Codex) supervised by Kim Morrison.
+The AFP entry \emph{Grothendieck's Schemes in Algebraic Geometry} states the sheaf axioms only for covers indexed by sets of real numbers. As a consequence, the predicate \texttt{sheaf\_of\_rings} accepts a presheaf that fails gluing. Hartshorne's Proposition II.1.1, that a morphism of sheaves inducing isomorphisms on all stalks is an isomorphism, is false for these sheaves. The predicate \texttt{scheme} accepts an object whose structure presheaf fails gluing, and another whose ring of global sections is not commutative. The repair is small. This note was written by AIs (Claude and Codex) supervised by Kim Morrison.
 
 
 \end{abstract}
-\begin{quote}
-\small
-“In response to various claims that such a feat would be impossible in Isabelle/HOL, we had to do it too, despite having no use for schemes.
-
-This leads to the question, how can we check whether a formal definition is correct? Good practice is to develop a theory of its basic properties within your proof assistant, capturing both positive and negative properties (e.g. \emph{X} is a group but \emph{Y} is not a group) and attempting some non-trivial constructions.”
-
-\hfill L. C. Paulson, 4 June 2025 \cite{blog}
-
-
-\end{quote}
 \section{The definition}
 
 A presheaf of rings $\mathcal F$ on a space $X$ is a sheaf if, for every open cover $U=\bigcup_{i\in I}U_i$, a section of $\mathcal F(U)$ vanishing on every $U_i$ is zero, and every family $s_i\in\mathcal F(U_i)$ agreeing on overlaps is the restriction of some section of $\mathcal F(U)$. This is Hartshorne's definition \cite[II.1]{hartshorne}, the text the formalization follows \cite{paper}; the index set $I$ is arbitrary.
@@ -48,12 +38,14 @@ fixes X :: "'a set" and U :: "'a set"
 \end{lstlisting}
 The locality and gluing axioms of \texttt{sheaf\_of\_rings} quantify over these covers, so they are tested only on covers with at most $\mathfrak c=|\mathbb R|$ members. The locales \texttt{ringed\_space}, \texttt{locally\_ringed\_space}, \texttt{affine\_scheme} and \texttt{scheme} are built on \texttt{sheaf\_of\_rings}. The paper displays the cover locale, with \texttt{real}, without comment, and describes its formalization of sheaves of rings as “concise (10 lines), tidy and almost transparent with respect to the pen-and-paper definition” \cite{paper}. The two locales are unchanged from the first AFP revision (9 April 2021) to the current development version \cite{afp}.
 
+We compared the entry's other definitions with Hartshorne's and found no further discrepancy of this kind.
+
 \section{Four consequences}
 
 The Isabelle theorems named below establish concrete instances of these constructions using the entry's own predicates, with no changes to its definitions. The algebraic descriptions identify the concrete rings used in the formalization up to isomorphism. Throughout, spaces are discrete, and a set is \emph{small} if it has at most $\mathfrak c$ elements. A union of at most $\mathfrak c$ small sets is small; this is why the weak axioms hold in each example.
 
 \begin{theorem}[{\href{https://github.com/kim-em/sheaf-of-rings/blob/main/counterexample/Counterexample.thy\#L259}{\nolinkurl{counterexample_to_arbitrary_gluing}}}]
-Let $A=\mathbb Z^{\mathbb R}$, let $X=A$, and let $\mathcal F(U)$ be the ring of functions $U\to A$ with small image. Then $\mathcal F$ satisfies \texttt{sheaf\_of\_rings}, but the sections $s_a=a$ on the singletons $\{a\}$ have no gluing.
+Let $A=\mathbb Z^{\mathbb R}$, let $X=A$ with the discrete topology, and let $\mathcal F(U)$ be the ring of functions $U\to A$ with small image. Then $\mathcal F$ satisfies \texttt{sheaf\_of\_rings}, but the sections $s_a=a$ on the singletons $\{a\}$ have no gluing.
 
 \end{theorem}
 A gluing would be the identity function of $A$, and $|A|>\mathfrak c$ by Cantor's diagonal argument.
@@ -88,27 +80,17 @@ theorem largeRing_not_isSheaf_commRing :
 \end{lstlisting}
 Index sets and sections lie in \texttt{Type 0}, so no universe issue is involved. Proposition II.1.1 is the Mathlib theorem \texttt{TopCat.Presheaf.isIso\_of\_stalkFunctor\_map\_iso}, and Mathlib's schemes carry a sheaf of commutative rings by definition \cite{mathlib}.
 
-\section{Why this went unnoticed}
+\section{Repair and validation}
 
-The repair is not hard. Indexing covers by sets of open sets, as the same theory file already does for the union axiom of a topology, gives the usual condition, and the entry rebuilds after changing about a hundred lines (the repository contains the patch). Simply replacing \texttt{real} by a type variable does not suffice: the locale predicate then acquires a fixed index type as a parameter, rather than quantifying over index types in its sheaf axiom. Here dependent type theory would have helped. In Lean, one can quantify over index types within the condition itself. The source comment explicitly records that the restriction to \texttt{real} was introduced to avoid trouble with the sheaf locale; that workaround changed the mathematics. Our repair shows that dependent types are not necessary to express the correct definition in Isabelle/HOL. It does not make the inconvenience that prompted the incorrect workaround irrelevant.
+The repair is not hard. Indexing covers by sets of open sets, as the same theory file already does for the union axiom of a topology, gives the usual condition, and the entry rebuilds after changing about a hundred lines (\href{https://github.com/kim-em/sheaf-of-rings}{the repository} contains the patch).
 
-The problem is that the definition was made without anything downstream of it. The entry proves that the spectrum of a ring is a locally ringed space and an affine scheme, that an affine scheme is a scheme, and that the empty space is a scheme \cite{afp}. The restriction and direct-image constructions propagate the weak sheaf axioms. Such closure results do not distinguish the weak predicate from the intended one. Nor does checking that spectra satisfy it: a genuine sheaf also satisfies the weaker axioms. The AFP entry page lists no entries depending on this development \cite{afp}; this does not exclude uses outside the AFP.
+Simply replacing \texttt{real} by a type variable does not suffice: the locale predicate then acquires a fixed index type as a parameter, rather than quantifying over index types in its sheaf axiom. In Lean, one can quantify over index types within the condition itself. Our repair shows that dependent types are not necessary to express the correct definition in Isabelle/HOL.
 
-The counterexamples give a precise test that was missing: neither the stalkwise isomorphism criterion nor the assertion that sections are determined by their germs can hold in this generality. Theorem 2 refutes the former; the nonzero commutator in Theorem 4 refutes the latter. These are basic consequences of the intended definition, and proving them would have required addressing the restriction. This establishes a gap in the validation of the definition, without requiring a claim about why individual authors or reviewers did not notice it.
-
-By contrast, formalizations built on a shared library inherit definitions that many later theorems have already exercised. The sheaf condition used by Mathlib's schemes is the one for which the stalk theorems above are proved \cite{mathlib}.
-
-\section{Scope}
-
-The defect identified here is in the specification, not a contradiction in Isabelle/HOL or a refutation of the entry's formal theorems. Its construction of the structure sheaf of $\operatorname{Spec}R$ is the standard one, and we do not claim that this sheaf is wrong. What the entry's theorems assert is weaker than their names suggest: “sheaf”, “locally ringed space” and “scheme” there mean the predicates above. We compared the entry's other definitions with Hartshorne's and found no further discrepancy of this kind.
-
-All Isabelle results were checked with the stock Isabelle2026 release against the unmodified AFP release \texttt{afp-2026-11-15} \cite{afp}, with no oracles or skipped proofs, and the Lean results with Lean and Mathlib \texttt{v4.35.0}. Sources and build instructions are in the accompanying repository, \href{https://github.com/kim-em/sheaf-of-rings}{https://github.com/kim-em/sheaf-of-rings}.
+The counterexamples give a precise test that was missing: neither the stalkwise isomorphism criterion nor the assertion that sections are determined by their germs can hold in this generality. Theorem 2 refutes the former; the nonzero commutator in Theorem 4 refutes the latter. These are basic consequences of the intended definition, and proving them would have required addressing the restriction.
 
 \begingroup\small
 \begin{thebibliography}
 {9}
-\bibitem{blog} L. C. Paulson. \href{https://lawrencecpaulson.github.io/2025/06/04/Definitions.html}{\emph{The concept of definition: in mathematics, and in computational logic}}. Blog post, 4 June 2025.
-
 \bibitem{hartshorne} R. Hartshorne. \emph{Algebraic Geometry}. Springer, 1977. Section II.1.
 
 \bibitem{afp} A. Bordg, L. C. Paulson, W. Li. \href{https://isa-afp.org/entries/Grothendieck_Schemes.html}{\emph{Grothendieck's Schemes in Algebraic Geometry}}, Archive of Formal Proofs, 29 March 2021. Checked source: AFP release \texttt{afp-2026-11-15} for Isabelle2026 (\href{https://github.com/isabelle-prover/mirror-afp-2026/tree/aaa511aa20958abfed536c271dfd2fe115515d6c/thys/Grothendieck_Schemes}{mirror revision aaa511aa2095}), \texttt{Topological\_Space.thy}, lines 77--82, and \texttt{Comm\_Ring.thy}, lines 660--666. The same text is in \href{https://github.com/isabelle-prover/mirror-afp-devel/tree/bda1576f4422c042210bb7cc8406ef1335dcdfb5/thys/Grothendieck_Schemes}{development revision bda1576f4422} of 14 November 2026.
